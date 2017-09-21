@@ -4,6 +4,7 @@
  * Each related work object has a ptr to the related works item.
  */ 
 #include <iostream>
+ 
 #include "Library.hpp"
 
 // class to store the description of an item.
@@ -78,7 +79,7 @@ int main() {
 	
 	// show that it is a forward iterator by updating the stored value. 
 	// and then reprinting the related works. 
-	*it = Book("Lord of the Rings");
+	// *it = Book("Lord of the Rings");
 	bookLibrary.printRelated(harryPotter);
 	
 	auto ptrTest = it.operator->();

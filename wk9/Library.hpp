@@ -16,8 +16,12 @@ public:
     bool inLibrary(const T& item);
 
 	class LibraryItemIterator;
-    LibraryItemIterator begin();
-    LibraryItemIterator end(); //(== nullptr)
+	LibraryItemIterator begin();
+	LibraryItemIterator end();
+	LibraryItemConstIterator begin() const;
+	LibraryItemConstIterator end() const;
+	LibraryItemConstIterator cbegin() const;
+	LibraryItemConstIterator cend() const;
 
 private:
     // private inner class to hold objects of type T in the library. 
@@ -54,11 +58,11 @@ private:
 public:
 	class LibraryItemIterator {
 	public:
-		typedef std::ptrdiff_t                     	difference_type;
-		typedef std::forward_iterator_tag 			iterator_category;
-		typedef T                                  	value_type;
-		typedef T*                                 	pointer;
-		typedef T&                                 	reference;
+		typedef std::ptrdiff_t                      difference_type;
+		typedef std::forward_iterator_tag           iterator_category;
+		typedef T                                   value_type;
+		typedef T*                                  pointer;
+		typedef T&                                  reference;
 
 		reference operator*() const;
 		pointer operator->() const { return &(operator*()); }
@@ -66,10 +70,19 @@ public:
 		bool operator==(const LibraryItemIterator& other) const;
 		bool operator!=(const LibraryItemIterator& other) const { return !operator==(other); }
 
-        LibraryItemIterator(std::shared_ptr<std::list<std::shared_ptr<T>>> d = nullptr): data{d} { }
+        LibraryItemIterator(std::shared_ptr<std::list<std::shared_ptr<T>>> d) : data{d} { }
 	private:
         std::shared_ptr<std::list<std::shared_ptr<T>>> data;
 	};
+
+	class LibraryItemConstIterator {
+	public:
+		typedef std::ptrdiff_t                      difference_type;
+		typedef std::forward_iterator_tag           iterator_category;
+		typedef T                                   value_type;
+		typedef T*                                  pointer;
+		typedef T&                                  reference;
+    };
 };
 
 // method to add a new item to the library.
@@ -154,22 +167,35 @@ void Library<T,U>::ItemContainer::RelatedWork::printItemAndDescription() {
         std::cout << *(t) << " - " << relatedWorkDescription << std::endl;
 }
 
+/* BEGIN ITERATOR IMPLEMENTATION */
 
 template <typename T, typename U>
 typename Library<T, U>::LibraryItemIterator Library<T, U>::begin() {
-    auto itemsToIterateThrough = std::make_shared<std::list<std::shared_ptr<T>>>();
-    for (auto i : items) {
+    // collect all items to iterate through
+    auto contents = std::make_shared<std::list<std::shared_ptr<T>>>();
+    for (const auto &i : items) {
         auto ptr = i.getItemPtr().lock();
-        if (ptr != nullptr) // item still exists
-            itemsToIterateThrough->push_back(ptr);
+        if (ptr != nullptr)
+            contents->push_back(ptr);
     }
-    return LibraryItemIterator(itemsToIterateThrough);
+    
+    // spit out iterator
+    return LibraryItemIterator(contents);
 }
 
 
 template <typename T, typename U>
 typename Library<T, U>::LibraryItemIterator Library<T, U>::end() {
-    return LibraryItemIterator();
+    return LibraryItemIterator(nullptr);
+}
+
+
+template <typename T, typename U>
+typename Library<T, U>::LibraryItemIterator& Library<T, U>::LibraryItemIterator::operator++() {
+    data->pop_front();
+    if (data->size() == 0)
+        data = nullptr;
+    return *this;
 }
 
 
@@ -178,21 +204,9 @@ typename Library<T, U>::LibraryItemIterator::reference Library<T, U>::LibraryIte
     return *(data->front());
 }
 
-
 template <typename T, typename U>
-typename Library<T, U>::LibraryItemIterator& Library<T, U>::LibraryItemIterator::operator++() { 
-    data->pop_front();
-    if (data->size() == 0)
-        data = nullptr;
-    return *this;
-}
-
-template <typename T, typename U>
-bool Library<T, U>::LibraryItemIterator::operator==(const Library<T, U>::LibraryItemIterator& other) const {
-    return (data == other.data) ;
-    /*
+bool Library<T, U>::LibraryItemIterator::operator==(const typename Library<T, U>::LibraryItemIterator& other) const {
     if (data == other.data) return true;
     if (data == nullptr || other.data == nullptr) return false;
     return (*data == *(other.data));
-    */
 }
